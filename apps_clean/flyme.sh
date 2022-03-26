@@ -17,6 +17,15 @@ DesktopBackup
 FamilyGuard
 GmsCore
 Phonesky_CN
+WPS_Meizu_Version
+UPTsmService
+MzUpdate
+FlymeMusic
+MeizuPay
+MzPay
+Browser
+DirectService
+FlymeLab
 "
 for delete_dir in $apps_dir ;do
   find $systemdir -type d -name "$delete_dir" | xargs rm -rf

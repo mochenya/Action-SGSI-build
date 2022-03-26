@@ -22,7 +22,7 @@ on:
       REPACK_NAME:
         description: 'REPACK_NAME'
         required: true
-        default: 'SGSI.zip'
+        default: 'SGSI.7z'
 
 
 
@@ -41,17 +41,14 @@ jobs:
 
       - name: Clean up the environment‌‌...
         run: |
-          docker rmi `docker images -q`
-          sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/apt/sources.list.d
           sudo -E apt-get -y purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
           sudo -E apt-get update
-          sudo -E apt-get -y autoremove --purge
           sudo -E apt-get clean
           df -h
 
       - name: Configuration Environment‌‌...
         run: |
-          sudo apt-get install -y git wget git zip unzip curl axel
+          sudo apt-get install -y git wget git zip unzip curl axel p7zip
 
       - name: Get the SGSI tool‌‌...
         run: |
@@ -67,7 +64,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/Tool-SGSI-build
           mkdir ./tmp
-          wget -U "Mozilla/5.0" ${{ github.event.inputs.ROM_URL }} -O "$GITHUB_WORKSPACE/Tool-SGSI-build/tmp/${{ github.event.inputs.ZIP_NAME }}"
+          wget -U "Mozilla/5.0" "${{ github.event.inputs.ROM_URL }}" -O "$GITHUB_WORKSPACE/Tool-SGSI-build/tmp/${{ github.event.inputs.ZIP_NAME }}"
           echo "zip_file: $(ls "$GITHUB_WORKSPACE/Tool-SGSI-build/tmp/")"
 
       - name: Configuration tool environment...
@@ -92,8 +89,8 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/Tool-SGSI-build
           pwd
-          zip -r AB_${{ github.event.inputs.REPACK_NAME }} SGSI/*
-          ls "AB_${{ github.event.inputs.REPACK_NAME }}"
+          7za a -t7z -m0=lzma -mx=9 ${{ github.event.inputs.REPACK_NAME }} SGSI/*
+          ls "${{ github.event.inputs.REPACK_NAME }}"
           echo "--------------------------------------"
           ls
           echo "--------------------------------------"
@@ -101,44 +98,17 @@ jobs:
           echo "--------------------------------------"
           ls upload_ab
           echo "--------------------------------------"
-          if [ $(ls -l AB_${{ github.event.inputs.REPACK_NAME }} | awk '{print $5}') -gt 2147483647 ]; then tar cvzpf - AB_${{ github.event.inputs.REPACK_NAME }} | split -d -b 1024m - upload_ab/AB_${{ github.event.inputs.REPACK_NAME }}; else mv AB_${{ github.event.inputs.REPACK_NAME }} upload_ab/AB_${{ github.event.inputs.REPACK_NAME }}; fi
+          if [ $(ls -l ${{ github.event.inputs.REPACK_NAME }} | awk '{print $5}') -gt 2147483647 ]; then tar cvzpf - ${{ github.event.inputs.REPACK_NAME }} | split -d -b 1024m - upload_ab/${{ github.event.inputs.REPACK_NAME }}; else mv ${{ github.event.inputs.REPACK_NAME }} upload_ab/${{ github.event.inputs.REPACK_NAME }}; fi
           echo "--------------------------------------"
           ls upload_ab
           echo "--------------------------------------"
-
-      - name: Make A-only type GSI‌‌...
-        if: ${{ github.event.inputs.SGSI_TYPE }} == 'A' || ${{ github.event.inputs.SGSI_TYPE }} == 'BOTH'
-        run: |
-          sudo bash $GITHUB_WORKSPACE/Tool-SGSI-build/make.sh A << EOF
-          ${{ github.event.inputs.ZIP_NAME }}
-          y
-          y
-          ${{ github.event.inputs.OS_TYPE }}
-          y
-
-      - name: Packing(A-only)...
-        if: ${{ github.event.inputs.SGSI_TYPE }} == 'A' || ${{ github.event.inputs.SGSI_TYPE }} == 'BOTH'
-        run: |
-          cd $GITHUB_WORKSPACE/Tool-SGSI-build
-          pwd
-          zip -r AONLY_${{ github.event.inputs.REPACK_NAME }} SGSI/*
-          ls "AONLY_${{ github.event.inputs.REPACK_NAME }}"
-          echo "--------------------------------------"
-          ls
-          echo "--------------------------------------"
-          mkdir upload_aonly
-          echo "--------------------------------------"
-          ls upload_aonly
-          echo "--------------------------------------"
-          if [ $(ls -l AONLY_${{ github.event.inputs.REPACK_NAME }} | awk '{print $5}') -gt 2147483647 ]; then tar cvzpf - AONLY_${{ github.event.inputs.REPACK_NAME }} | split -d -b 1024m - upload_aonly/AONLY_${{ github.event.inputs.REPACK_NAME }}; else mv AONLY_${{ github.event.inputs.REPACK_NAME }} upload_aonly/AONLY_${{ github.event.inputs.REPACK_NAME }}; fi
-          echo "--------------------------------------"
-          ls upload_aonly
-          echo "--------------------------------------"
+          cd upload_ab
+          md5sum ./* > Filemd5.sum
 
       - name: Upload to Release‌‌...
         uses: ncipollo/release-action@v1.8.0
         with:
-          artifacts: "${{ github.workspace }}/Tool-SGSI-build/upload_ab/*,${{ github.workspace }}/Tool-SGSI-build/upload_aonly/*"
+          artifacts: "${{ github.workspace }}/Tool-SGSI-build/upload_ab/*"
           tag: "${{ github.event.inputs.REPACK_NAME }}_${{ env.BUILD_TIME }}"
           bodyFile: "${{ github.workspace }}/Tool-SGSI-build/SGSI/build_info.txt"
           token: ${{ secrets.GITHUB_TOKEN }}

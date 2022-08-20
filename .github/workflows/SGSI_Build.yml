@@ -15,21 +15,14 @@ on:
         description: 'OS_TYPE'
         required: true
         default: 'miui'
-      SGSI_TYPE:
-        description: 'SGSI_TYPE(AB, A, or BOTH)'
-        required: true
-        default: 'AB'
       REPACK_NAME:
         description: 'REPACK_NAME'
         required: true
         default: 'SGSI.7z'
 
-
-
-
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Get the source code of this repositorie...
@@ -48,7 +41,7 @@ jobs:
 
       - name: Configuration Environment‌‌...
         run: |
-          sudo apt-get install -y git wget git zip unzip curl axel p7zip
+          sudo apt-get install -y git wget git zip unzip curl axel p7zip-full
 
       - name: Get the SGSI tool‌‌...
         run: |
@@ -64,7 +57,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/Tool-SGSI-build
           mkdir ./tmp
-          wget -U "Mozilla/5.0" "${{ github.event.inputs.ROM_URL }}" -O "$GITHUB_WORKSPACE/Tool-SGSI-build/tmp/${{ github.event.inputs.ZIP_NAME }}"
+          axel -n 8 "${{ github.event.inputs.ROM_URL }}" -o "$GITHUB_WORKSPACE/Tool-SGSI-build/tmp/${{ github.event.inputs.ZIP_NAME }}"
           echo "zip_file: $(ls "$GITHUB_WORKSPACE/Tool-SGSI-build/tmp/")"
 
       - name: Configuration tool environment...
@@ -75,7 +68,6 @@ jobs:
           java -version
 
       - name: Make AB type GSI‌‌...
-        if: ${{ github.event.inputs.SGSI_TYPE }} == 'AB' || ${{ github.event.inputs.SGSI_TYPE }} == 'BOTH'
         run: |
           sudo bash $GITHUB_WORKSPACE/Tool-SGSI-build/make.sh AB << EOF
           ${{ github.event.inputs.ZIP_NAME }}
@@ -85,7 +77,6 @@ jobs:
           y
 
       - name: Packing(AB)...
-        if: ${{ github.event.inputs.SGSI_TYPE }} == 'AB' || ${{ github.event.inputs.SGSI_TYPE }} == 'BOTH'
         run: |
           cd $GITHUB_WORKSPACE/Tool-SGSI-build
           pwd
@@ -106,7 +97,7 @@ jobs:
           md5sum ./* > Filemd5.sum
 
       - name: Upload to Release‌‌...
-        uses: ncipollo/release-action@v1.8.0
+        uses: ncipollo/release-action@main
         with:
           artifacts: "${{ github.workspace }}/Tool-SGSI-build/upload_ab/*"
           tag: "${{ github.event.inputs.REPACK_NAME }}_${{ env.BUILD_TIME }}"

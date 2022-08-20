@@ -34,7 +34,7 @@ jobs:
 
       - name: Clean up the environment‌‌...
         run: |
-          sudo -E apt-get -y purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
+          sudo -E apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mysql* php*
           sudo -E apt-get update
           sudo -E apt-get clean
           df -h

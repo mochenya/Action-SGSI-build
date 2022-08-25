@@ -94,7 +94,7 @@ jobs:
           ls upload_ab
           echo "--------------------------------------"
           cd upload_ab
-          sha256 * | tee ./sha256sum.txt
+          sha256sum * | tee ./sha256sum.txt
 
       - name: 🌊 Upload to Release‌‌...
         uses: ncipollo/release-action@main

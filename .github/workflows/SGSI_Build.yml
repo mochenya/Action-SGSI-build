@@ -15,10 +15,6 @@ on:
         description: 'OS_TYPE'
         required: true
         default: 'miui'
-      SGSI_TYPE:
-        description: 'SGSI_TYPE(AB, A, or BOTH)'
-        required: true
-        default: 'AB'
       REPACK_NAME:
         description: 'REPACK_NAME'
         required: true
@@ -74,7 +70,6 @@ jobs:
           java -version
 
       - name: Make AB type GSI‌‌...
-        if: ${{ github.event.inputs.SGSI_TYPE }} == 'AB' || ${{ github.event.inputs.SGSI_TYPE }} == 'BOTH'
         run: |
           sudo bash $GITHUB_WORKSPACE/Tool-SGSI-build/make.sh AB << EOF
           ${{ github.event.inputs.ZIP_NAME }}
@@ -84,12 +79,11 @@ jobs:
           y
 
       - name: Packing(AB)...
-        if: ${{ github.event.inputs.SGSI_TYPE }} == 'AB' || ${{ github.event.inputs.SGSI_TYPE }} == 'BOTH'
         run: |
           cd $GITHUB_WORKSPACE/Tool-SGSI-build
           pwd
-          zip -r AB_${{ github.event.inputs.REPACK_NAME }} SGSI/*
-          ls "AB_${{ github.event.inputs.REPACK_NAME }}"
+          zip -r ${{ github.event.inputs.REPACK_NAME }} SGSI/*
+          ls "${{ github.event.inputs.REPACK_NAME }}"
           echo "--------------------------------------"
           ls
           echo "--------------------------------------"
@@ -97,44 +91,15 @@ jobs:
           echo "--------------------------------------"
           ls upload_ab
           echo "--------------------------------------"
-          if [ $(ls -l AB_${{ github.event.inputs.REPACK_NAME }} | awk '{print $5}') -gt 2147483647 ]; then tar cvzpf - AB_${{ github.event.inputs.REPACK_NAME }} | split -d -b 1024m - upload_ab/AB_${{ github.event.inputs.REPACK_NAME }}; else mv AB_${{ github.event.inputs.REPACK_NAME }} upload_ab/AB_${{ github.event.inputs.REPACK_NAME }}; fi
+          if [ $(ls -l ${{ github.event.inputs.REPACK_NAME }} | awk '{print $5}') -gt 2147483647 ]; then tar cvzpf - ${{ github.event.inputs.REPACK_NAME }} | split -d -b 1024m - upload_ab/${{ github.event.inputs.REPACK_NAME }}; else mv ${{ github.event.inputs.REPACK_NAME }} upload_ab/${{ github.event.inputs.REPACK_NAME }}; fi
           echo "--------------------------------------"
           ls upload_ab
-          echo "--------------------------------------"
-
-      - name: Make A-only type GSI‌‌...
-        if: ${{ github.event.inputs.SGSI_TYPE }} == 'A' || ${{ github.event.inputs.SGSI_TYPE }} == 'BOTH'
-        run: |
-          sudo bash $GITHUB_WORKSPACE/Tool-SGSI-build/make.sh A << EOF
-          ${{ github.event.inputs.ZIP_NAME }}
-          y
-          y
-          ${{ github.event.inputs.OS_TYPE }}
-          y
-
-      - name: Packing(A-only)...
-        if: ${{ github.event.inputs.SGSI_TYPE }} == 'A' || ${{ github.event.inputs.SGSI_TYPE }} == 'BOTH'
-        run: |
-          cd $GITHUB_WORKSPACE/Tool-SGSI-build
-          pwd
-          zip -r AONLY_${{ github.event.inputs.REPACK_NAME }} SGSI/*
-          ls "AONLY_${{ github.event.inputs.REPACK_NAME }}"
-          echo "--------------------------------------"
-          ls
-          echo "--------------------------------------"
-          mkdir upload_aonly
-          echo "--------------------------------------"
-          ls upload_aonly
-          echo "--------------------------------------"
-          if [ $(ls -l AONLY_${{ github.event.inputs.REPACK_NAME }} | awk '{print $5}') -gt 2147483647 ]; then tar cvzpf - AONLY_${{ github.event.inputs.REPACK_NAME }} | split -d -b 1024m - upload_aonly/AONLY_${{ github.event.inputs.REPACK_NAME }}; else mv AONLY_${{ github.event.inputs.REPACK_NAME }} upload_aonly/AONLY_${{ github.event.inputs.REPACK_NAME }}; fi
-          echo "--------------------------------------"
-          ls upload_aonly
           echo "--------------------------------------"
 
       - name: Upload to Release‌‌...
         uses: ncipollo/release-action@main
         with:
-          artifacts: "${{ github.workspace }}/Tool-SGSI-build/upload_ab/*,${{ github.workspace }}/Tool-SGSI-build/upload_aonly/*"
+          artifacts: "${{ github.workspace }}/Tool-SGSI-build/upload_ab/*"
           tag: "${{ github.event.inputs.REPACK_NAME }}_${{ env.BUILD_TIME }}"
           bodyFile: "${{ github.workspace }}/Tool-SGSI-build/SGSI/build_info.txt"
           token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,105 @@
+name: SGSI Build AB
+
+on:
+  workflow_dispatch:
+    inputs:
+      ROM_URL:
+        description: 'ROM_URL'
+        required: true
+        default: 'bigota.d.miui.com/22.7.13/miui_TUCANA_22.7.13_fa66264456_11.0.zip'
+      ZIP_NAME:
+        description: 'ZIP_NAME'
+        required: true
+        default: 'miui_TUCANA_22.7.13_fa66264456_11.0.zip'
+      OS_TYPE:
+        description: 'OS_TYPE'
+        required: true
+        default: 'miui'
+      REPACK_NAME:
+        description: 'REPACK_NAME'
+        required: true
+        default: 'miui_TUCANA_22.7.13_vndk30.img.gz'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: 🌊 Get the source code of this repositorie...
+        uses: actions/checkout@main
+
+      - name: 🌊 Get variable configuration...
+        run: |
+          echo "BUILD_TIME=$(date +%s | md5sum | awk '{print substr($1,1,10)}')" >> $GITHUB_ENV
+
+      - name: 🌊 Clean up the environment‌‌...
+        run: |
+          sudo -E apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mysql* php*
+          sudo -E apt-get update
+          sudo -E apt-get clean
+          df -h
+
+      - name: 🌊 Configuration Environment‌‌...
+        run: |
+          sudo apt-get install -y git wget git zip unzip curl axel
+
+      - name: 🌊 Get the SGSI tool‌‌...
+        run: |
+          git clone --recurse-submodules https://github.com/PdyLZY/SGSI-build-tool.git -b 11 $GITHUB_WORKSPACE/Tool-SGSI-build
+          sudo chmod 777 -R $GITHUB_WORKSPACE/Tool-SGSI-build
+
+      - name: 🌊 Download ROM‌‌...
+        run: |
+          cd $GITHUB_WORKSPACE/Tool-SGSI-build
+          mkdir ./tmp
+          axel -n 8 "${{ github.event.inputs.ROM_URL }}" -o "$GITHUB_WORKSPACE/Tool-SGSI-build/tmp/${{ github.event.inputs.ZIP_NAME }}"
+          echo "zip_file: $(ls "$GITHUB_WORKSPACE/Tool-SGSI-build/tmp/")"
+
+      - name: 🌊 Configuration tool environment...
+        run: |
+          sudo sed -i 's/USE_MIRROR_FOR_PIP\=true/USE_MIRROR_FOR_PIP\=false/' $GITHUB_WORKSPACE/Tool-SGSI-build/setup.sh
+          sudo bash $GITHUB_WORKSPACE/Tool-SGSI-build/setup.sh
+          java -version
+
+      - name: 🌊 Make AB type GSI‌‌...
+        run: |
+          sudo bash $GITHUB_WORKSPACE/Tool-SGSI-build/make.sh AB << EOF
+          ${{ github.event.inputs.ZIP_NAME }}
+          y
+          y
+          ${{ github.event.inputs.OS_TYPE }}
+          y
+
+      - name: 🌊 Get build info...
+        run: |
+          cat "${{ github.workspace }}/Tool-SGSI-build/SGSI/build_info.txt"
+
+      - name: 🌊 Packing(AB)...
+        run: |
+          cd $GITHUB_WORKSPACE/Tool-SGSI-build
+          pwd
+          cd $GITHUB_WORKSPACE/Tool-SGSI-build/SGSI
+          gzip -9 -c system.img > $GITHUB_WORKSPACE/Tool-SGSI-build/${{ github.event.inputs.REPACK_NAME }}
+          cd ..
+          ls "${{ github.event.inputs.REPACK_NAME }}"
+          echo "--------------------------------------"
+          ls
+          echo "--------------------------------------"
+          mkdir upload_ab
+          echo "--------------------------------------"
+          ls upload_ab
+          echo "--------------------------------------"
+          if [ $(ls -l ${{ github.event.inputs.REPACK_NAME }} | awk '{print $5}') -gt 2147483647 ]; then tar cvzpf - ${{ github.event.inputs.REPACK_NAME }} | split -d -b 1024m - upload_ab/${{ github.event.inputs.REPACK_NAME }}; else mv ${{ github.event.inputs.REPACK_NAME }} upload_ab/${{ github.event.inputs.REPACK_NAME }}; fi
+          echo "--------------------------------------"
+          ls upload_ab
+          echo "--------------------------------------"
+          cd upload_ab
+          sha256sum * | tee ./sha256sum.txt
+
+      - name: 🌊 Upload to Release‌‌...
+        uses: ncipollo/release-action@main
+        with:
+          artifacts: "${{ github.workspace }}/Tool-SGSI-build/upload_ab/*"
+          tag: "${{ github.event.inputs.REPACK_NAME }}_${{ env.BUILD_TIME }}"
+          bodyFile: "${{ github.workspace }}/Tool-SGSI-build/SGSI/build_info.txt"
+          token: ${{ secrets.GITHUB_TOKEN }}

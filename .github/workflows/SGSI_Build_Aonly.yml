@@ -1,4 +1,4 @@
-name: SGSI_Build
+name: SGSI Build Aonly
 
 on:
   workflow_dispatch:
@@ -61,9 +61,9 @@ jobs:
           sudo bash $GITHUB_WORKSPACE/Tool-SGSI-build/setup.sh
           java -version
 
-      - name: 🌊 Make AB type GSI‌‌...
+      - name: 🌊 Make Aonly type GSI‌‌...
         run: |
-          sudo bash $GITHUB_WORKSPACE/Tool-SGSI-build/make.sh AB << EOF
+          sudo bash $GITHUB_WORKSPACE/Tool-SGSI-build/make.sh A << EOF
           ${{ github.event.inputs.ZIP_NAME }}
           y
           y
@@ -74,7 +74,7 @@ jobs:
         run: |
           cat "${{ github.workspace }}/Tool-SGSI-build/SGSI/build_info.txt"
 
-      - name: 🌊 Packing(AB)...
+      - name: 🌊 Packing(Aonly)...
         run: |
           cd $GITHUB_WORKSPACE/Tool-SGSI-build
           pwd
@@ -85,21 +85,21 @@ jobs:
           echo "--------------------------------------"
           ls
           echo "--------------------------------------"
-          mkdir upload_ab
+          mkdir upload_a
           echo "--------------------------------------"
-          ls upload_ab
+          ls upload_a
           echo "--------------------------------------"
-          if [ $(ls -l ${{ github.event.inputs.REPACK_NAME }} | awk '{print $5}') -gt 2147483647 ]; then tar cvzpf - ${{ github.event.inputs.REPACK_NAME }} | split -d -b 1024m - upload_ab/${{ github.event.inputs.REPACK_NAME }}; else mv ${{ github.event.inputs.REPACK_NAME }} upload_ab/${{ github.event.inputs.REPACK_NAME }}; fi
+          if [ $(ls -l ${{ github.event.inputs.REPACK_NAME }} | awk '{print $5}') -gt 2147483647 ]; then tar cvzpf - ${{ github.event.inputs.REPACK_NAME }} | split -d -b 1024m - upload_a/${{ github.event.inputs.REPACK_NAME }}; else mv ${{ github.event.inputs.REPACK_NAME }} upload_a/${{ github.event.inputs.REPACK_NAME }}; fi
           echo "--------------------------------------"
-          ls upload_ab
+          ls upload_a
           echo "--------------------------------------"
-          cd upload_ab
+          cd upload_a
           sha256sum * | tee ./sha256sum.txt
 
       - name: 🌊 Upload to Release‌‌...
         uses: ncipollo/release-action@main
         with:
-          artifacts: "${{ github.workspace }}/Tool-SGSI-build/upload_ab/*"
+          artifacts: "${{ github.workspace }}/Tool-SGSI-build/upload_a/*"
           tag: "${{ github.event.inputs.REPACK_NAME }}_${{ env.BUILD_TIME }}"
           bodyFile: "${{ github.workspace }}/Tool-SGSI-build/SGSI/build_info.txt"
           token: ${{ secrets.GITHUB_TOKEN }}

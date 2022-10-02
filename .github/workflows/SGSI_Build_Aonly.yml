@@ -41,7 +41,7 @@ jobs:
 
       - name: 🌊 Configuration Environment‌‌...
         run: |
-          sudo apt-get install -y git wget git zip unzip curl axel
+          sudo apt-get install -y git wget git zip unzip curl axel python2
 
       - name: 🌊 Get the SGSI tool‌‌...
         run: |
